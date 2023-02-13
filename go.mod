@@ -5,6 +5,8 @@ go 1.18
 require (
 	github.com/gin-gonic/gin v1.8.2
 	github.com/google/go-github v17.0.0+incompatible
+	github.com/imroc/req/v3 v3.32.0
+	golang.org/x/oauth2 v0.5.0
 )
 
 require (
@@ -15,12 +17,11 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/imroc/req/v3 v3.32.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -42,6 +43,7 @@ require (
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/tools v0.5.0 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

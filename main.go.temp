@@ -1,0 +1,38 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func setupRouter() *gin.Engine {
+	r := gin.Default()
+
+	r.POST("/login/oauth/access_token", func(c *gin.Context) {
+		code := c.Query("code")
+
+		result, err := OAuthByCode(code)
+
+		if err != nil {
+			fmt.Println(err)
+			c.Data(http.StatusBadRequest, "application/json; charset=utf-8", result)
+		}
+
+		c.Data(http.StatusOK, "application/json; charset=utf-8", result)
+	})
+
+	r.GET("/user/repos", func(c *gin.Context) {
+		token := c.GetHeader("token")
+		result, _ := GetRepos(token)
+		c.JSON(http.StatusOK, result)
+	})
+	return r
+}
+
+func main() {
+	r := setupRouter()
+
+	r.Run(":3188")
+}
