@@ -5,60 +5,83 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/tidwall/gjson"
 )
 
 func main() {
-	proxy, err := NewProxy("https://api.github.com")
-	if err != nil {
-		panic(err)
+	r := gin.Default()
+
+	corsConfig := cors.Config{
+		AllowOrigins:     []string{"*.wado.local"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
+		AllowCredentials: true,
+		AllowWildcard:    true,
 	}
 
-	http.HandleFunc("/", ProxyRequestHandler(proxy))
-	http.ListenAndServe(":5174", nil)
-}
+	r.Use(cors.New(corsConfig))
 
-func NewProxy(targetHost string) (*httputil.ReverseProxy, error) {
-	target, err := url.Parse(targetHost)
-	if err != nil {
-		return nil, err
-	}
+	r.POST("/login/oauth/access_token", func(c *gin.Context) {
+		code := c.Query("code")
+
+		result, err := OAuthByCode(code)
+
+		if err != nil {
+			fmt.Println(err)
+			c.Data(http.StatusBadRequest, "application/json; charset=utf-8", result)
+		}
+
+		token := gjson.Get(string(result), "access_token").String()
+
+		if token != "" {
+			scope := gjson.Get(string(result), "token_type").String()
+			c.SetCookie("_gho", scope+" "+token, 60*60*24*7, "", "wado.local", false, true)
+		}
+
+		c.Data(http.StatusOK, "application/json; charset=utf-8", result)
+	})
+
+	// github api proxy
+
+	target, _ := url.Parse("https://api.github.com")
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-		modifyRequest(req, target)
-	}
-
-	proxy.ModifyResponse = modifyResponse()
-	proxy.ErrorHandler = errorHandler()
-	return proxy, nil
-}
-
-func ProxyRequestHandler(proxy *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		proxy.ServeHTTP(w, r)
-	}
-}
-
-func modifyResponse() func(*http.Response) error {
-	return func(resp *http.Response) error {
-		fmt.Println("modifyResponse")
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		// 删除来自 GitHub 原响应报文的 Allow-Origin
+		// 因为 Allow-Origin头 不允许有多个
+		resp.Header.Del("Access-Control-Allow-Origin")
 		return nil
 	}
-}
 
-func modifyRequest(req *http.Request, target *url.URL) error {
-	req.Host = target.Host
-
-	req.Header.Set("Authorization", req.Header.Get("token"))
-	return nil
-}
-
-func errorHandler() func(http.ResponseWriter, *http.Request, error) {
-	return func(w http.ResponseWriter, req *http.Request, err error) {
+	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
 		fmt.Printf("Got error while modifying response: %v \n", err)
 		return
 	}
+
+	originalDirector := proxy.Director
+
+	r.Any("/api/*path", func(c *gin.Context) {
+		proxy.Director = func(req *http.Request) {
+			originalDirector(req)
+			req.Host = target.Host
+			req.URL.Path = strings.Replace(req.URL.Path, "/api", "", 1)
+			req.Header.Set("Authorization", getTokenFromCookie(c))
+		}
+
+		proxy.ServeHTTP(c.Writer, c.Request)
+	})
+
+	r.Run(":5174")
+
+}
+
+func getTokenFromCookie(c *gin.Context) string {
+	token, _ := c.Cookie("_gho")
+	fmt.Println((token))
+	return token
 }
