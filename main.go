@@ -16,7 +16,7 @@ func main() {
 	r := gin.Default()
 
 	corsConfig := cors.Config{
-		AllowOrigins:     []string{"*.wado.local"},
+		AllowOrigins:     []string{"*.7z7z.cc"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type"},
 		AllowCredentials: true,
