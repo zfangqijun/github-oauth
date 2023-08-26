@@ -12,7 +12,13 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+var (
+	AppCommitSHA string
+)
+
 func main() {
+	fmt.Printf("AppCommitSHA: %s\n", AppCommitSHA)
+
 	r := gin.Default()
 
 	corsConfig := cors.Config{

@@ -1,0 +1,37 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+
+      - name: Mod Download
+        run: go mod download
+
+      - name: Build
+        run: CGO_ENABLED=0 go build -v -ldflags "-X 'main.AppCommitSHA=$GITHUB_SHA'" ./
+
+      - name: Run ls
+        run: ls -la
+
+      - name: Copy File
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.HOST_PKEY }}
+          source: "./github-oauth,./start.sh"
+          target: "/root/arduino/github-oauth"
